@@ -17,10 +17,14 @@ class DbConnection:
                                 user=url.username,
                                 password=url.password,
                                 host=url.hostname,
-                                port=url.port
+                                port=url.port,
+                                connect_timeout=3,
+                                keepalives=1,
+                                keepalives_idle=5,
+                                keepalives_interval=2,
+                                keepalives_count=2
                                 )
         return conn
-
 
 class DBOp:
     def init_db(self, conn):

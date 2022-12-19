@@ -1,3 +1,5 @@
+import pdb
+
 from flask import Flask, request
 
 from db.db import DBOp, DbConnection
@@ -30,7 +32,7 @@ def add_customer() -> dict:
 
 
 
-@app.get("/customer/all")
+@app.get("/customer/")
 @token_required
 def get_all_customer() -> dict:
     """
