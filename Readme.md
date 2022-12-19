@@ -25,3 +25,8 @@
       ```commandline
       curl -X POST -H 'x-api-key:FMfcgzGrbHsKxblngBMPGtCpQvzfkvSJ' -H "Content-type:application/json" -d '{"department":"Management","phone":9839542709}'  http://127.0.0.1:8080/customer/c0263f55-6997-4dd6-8cd3-cb2a5e7e4859
       ```
+- Details on proj
+  - ```main.py``` handles all the api implementation
+  - ```db/db.py``` has connection client and various db operation
+  - ```Classes``` folder has various Custom Exception classes and the data definations
+  - ```utilites``` has various helper functions that can be used throughout the project
