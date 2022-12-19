@@ -3,7 +3,7 @@ import urllib.parse as up
 import psycopg2
 import psycopg2.errors
 
-from Classes.data_defination import Departments, Employee
+from Classes.data_defination import Departments, Customer
 
 
 class DbConnection:
@@ -24,6 +24,10 @@ class DbConnection:
 
 class DBOp:
     def init_db(self, conn):
+        """
+        Handles initlialising the database with 3 tables and the said department in enum
+        :param conn:
+        """
         sql_list = []
 
         sql = '''
@@ -47,7 +51,6 @@ class DBOp:
                 name varchar(10) NOT NULL)
               '''
         sql_list.append(sql)
-        self.execute(conn, sql)
         for dept in Departments:
             sql = '''
                     INSERT INTO Departments(name) values ('%s');
@@ -65,15 +68,21 @@ class DBOp:
                 CREATE TABLE IF NOT EXISTS Customer
                  (id varchar(50) PRIMARY KEY, 
                  name varchar (30) NOT NULL, 
-                 email varchar (30), phone BIGINT NOT NULL,
+                 email varchar (30) UNIQUE, phone BIGINT NOT NULL UNIQUE,
                  Dept_id INT references Departments(id),
                  Country_id INT references country(id))
               '''
         sql_list.append(sql)
         for sql in sql_list:
-            self.execute(conn, sql)
+            self.execute_with_get(conn, sql, get_output=False)
 
-    def get_country_id(self, conn, country_name):
+    def get_country_id(self, conn, country_name) -> int:
+        """
+        Get country id from country table, create one if not present
+        :param conn:
+        :param country_name:
+        :return:
+        """
         sql = '''
         SELECT id FROM country where name='%s' 
         ''' % (country_name)
@@ -81,14 +90,20 @@ class DBOp:
         if resp:
             # for row in resp:
             print(f"country {country_name} has id {resp[0]}")
-            return resp[0]
+            return int(resp[0])
         else:
             print(f"country {country_name} has no entry, Creating..")
             country_id = self.create_country(conn, country_name)
             print(f"country {country_name} has id {country_id}")
-            return country_id
+            return int(country_id)
 
     def get_department_id(self, conn, dept_name):
+        """
+        Returns department id, raise error if not exists
+        :param conn:
+        :param dept_name:
+        :return:
+        """
         sql = '''
                 SELECT id FROM Departments where name='%s' 
                 ''' % (dept_name)
@@ -107,51 +122,44 @@ class DBOp:
         data = self.execute_with_get(conn, sql)
         return data[0]
 
-    def execute_with_get(self, conn, sql):
+    def execute_with_get(self, conn, sql, get_output=True, multi=False):
+        """
+        execute query that has one output
+        :param multi: specify if query should return all output
+        :param conn:
+        :param sql:
+        :return:
+        """
         cur = conn.cursor()
         try:
             # print(sql)
             cur.execute(sql)
-
-            data = cur.fetchone()
+            if get_output:
+                if not multi:
+                    data = cur.fetchone()
+                else:
+                    data = cur.fetchall()
+            else:
+                return
             self.commit(conn)
         except Exception as e:
             print(e)
-            raise
+            conn.rollback()
+            raise Exception(e)
         finally:
             cur.close()
         return data
-
-    def execute_with_get_all(self, conn, sql):
-        cur = conn.cursor()
-        try:
-            cur.execute(sql)
-            data = cur.fetchall()
-        except Exception as e:
-            print(e)
-            raise
-        finally:
-            cur.close()
-        return data
-
-    def execute(self, conn, sql):
-        cur = conn.cursor()
-        try:
-            cur.execute(sql)
-        except Exception as e:
-            print(e)
-            raise
-        finally:
-            cur.close()
-        self.commit(conn)
-        cur.close()
 
     def commit(self, conn):
         conn.commit()
 
-    # DBOp().init_db(DbConnection().conn)
-    # print(DBOp().get_country_id(DbConnection().conn,'INDIA'))
-    def get_customer_from_db(self, conn, id):
+    def get_customer_from_db(self, conn, id=None, all=False):
+        """
+        returns customer details in object format, all specifies to get all customers in db
+        :param conn:
+        :param id:
+        :return:
+        """
         sql = '''
                 SELECT customer.id,customer.name as c_name,
                 customer.phone,customer.email,
@@ -163,37 +171,25 @@ class DBOp:
                 INNER JOIN Departments
                         ON Departments.id = customer.dept_id
                         INNER JOIN country on country.id = customer.country_id 
-                        where customer.id='%s';
-            ''' % id
-        resp = self.execute_with_get(conn, sql)
-        if resp:
-            emp = Employee(ID=resp[0], name=resp[1], phone=resp[2], email=resp[3], department=resp[4], country=resp[5],
-                           dept_id=resp[6], country_id=resp[7])
-            return emp
-        else:
-            return None
-
-    def get_all_customers_from_db(self, conn):
-        c_list = []
-        sql = '''
-                        SELECT customer.id,customer.name as c_name,
-                        customer.phone,customer.email,
-                        Departments.name as d_name,
-                        country.name as country_name,
-                        customer.dept_id,
-                        customer.country_id
-                        FROM customer
-                        INNER JOIN Departments
-                                ON Departments.id = customer.dept_id
-                                INNER JOIN country on country.id = customer.country_id 
-                    '''
-        resp_list = self.execute_with_get_all(conn, sql)
-        if resp_list:
-            for resp in resp_list:
-                emp = Employee(ID=resp[0], name=resp[1], phone=resp[2], email=resp[3], department=resp[4],
+            '''
+        if not all:
+            sql += '''
+                where customer.id='%s';
+                ''' % id
+            resp = self.execute_with_get(conn, sql)
+            if resp:
+                emp = Customer(ID=resp[0], name=resp[1], phone=resp[2], email=resp[3], department=resp[4],
                                country=resp[5],
                                dept_id=resp[6], country_id=resp[7])
-                c_list.append(emp.to_json())
-            return c_list
+                return emp
         else:
-            return None
+            c_list = []
+            resp_list = self.execute_with_get(conn, sql, multi=True)
+            if resp_list:
+                for resp in resp_list:
+                    emp = Customer(ID=resp[0], name=resp[1], phone=resp[2], email=resp[3], department=resp[4],
+                                   country=resp[5],
+                                   dept_id=resp[6], country_id=resp[7])
+                    c_list.append(emp.to_json())
+                return c_list
+        return

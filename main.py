@@ -37,7 +37,7 @@ def get_all_customer() -> dict:
     Gets all the customers
     :return:
     """
-    emp_list = db_op.get_all_customers_from_db(conn)
+    emp_list = db_op.get_customer_from_db(conn,all=True)
     return emp_list
 
 
@@ -104,4 +104,4 @@ def update_customer(id: str) -> dict:
     return {"message": f"updated {id}"}
 
 
-app.run(debug=True, host='127.0.0.1', port=8080)
+app.run(debug=True, host='127.0.0.1', port=8080,use_reloader=False)

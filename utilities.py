@@ -2,31 +2,31 @@ from functools import wraps
 
 from flask import request, jsonify
 
-from Classes.data_defination import Employee
+from Classes.data_defination import Customer
 
 
 def token_required(f):
-   @wraps(f)
-   def decorator(*args, **kwargs):
+    @wraps(f)
+    def decorator(*args, **kwargs):
 
-      token = None
+        token = None
 
-      if 'x-api-key' in request.headers:
-         token = request.headers['x-api-key']
+        if 'x-api-key' in request.headers:
+            token = request.headers['x-api-key']
 
-      if not token:
-         return jsonify({'message': 'a valid token is missing'})
+        if not token:
+            return jsonify({'message': 'a valid token is missing'})
 
-      try:
-         if token == 'FMfcgzGrbHsKxblngBMPGtCpQvzfkvSJ':
-            return f(*args, **kwargs)
-         else:
-            return jsonify({'message': 'token is invalid'})
+        try:
+            if token == 'FMfcgzGrbHsKxblngBMPGtCpQvzfkvSJ':
+                return f(*args, **kwargs)
+            else:
+                return jsonify({'message': 'token is invalid'})
 
-      except Exception as e:
-         return jsonify({"message":'some error occured','stackTrace':e})
+        except Exception as e:
+            return jsonify({"message": 'some error occured', 'stackTrace': (str(e))})
 
-   return decorator
+    return decorator
 
 
 def create_emp_obj(payload):
@@ -35,5 +35,5 @@ def create_emp_obj(payload):
     phone = int(payload["phone"])
     department = payload["department"]
     country = payload["country"]
-    emp = Employee(name=name, email=email, phone=phone, department=department, country=country)
+    emp = Customer(name=name, email=email, phone=phone, department=department, country=country)
     return emp
