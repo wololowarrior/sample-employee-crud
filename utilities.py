@@ -19,9 +19,10 @@ def token_required(f):
 
         try:
             if token == 'FMfcgzGrbHsKxblngBMPGtCpQvzfkvSJ':
-                return f(*args, **kwargs)
+                resp,status_code = f(*args, **kwargs)
+                return resp,status_code
             else:
-                return jsonify({'message': 'token is invalid'})
+                return jsonify({'message': 'token is invalid'}), 401
 
         except Exception as e:
             return jsonify({"message": 'some error occured', 'stackTrace': (str(e))})
