@@ -1,10 +1,7 @@
 import http
-import pdb
-from typing import Tuple, Dict, Union, List
 
 from flask import Flask, request
 
-from Classes.data_defination import Customer
 from db.db import DBOp, DbConnection
 from utilities import token_required, create_emp_obj
 
@@ -31,8 +28,7 @@ def add_customer() -> tuple[dict, int]:
             INSERT INTO customer(id,name,phone,email,Dept_id,Country_id) VALUES ('%s','%s',%d,'%s',%d,%d) RETURNING id
           ''' % (emp.ID, emp.name, emp.phone, emp.email, emp.dept_id, emp.country_id)
     resp = db_op.execute_with_get(conn, sql)
-    return {"message": f"Customer added with ID {resp[0]}"},http.HTTPStatus.OK
-
+    return {"message": f"Customer added with ID {resp[0]}"}, http.HTTPStatus.OK
 
 
 @app.get("/customer/")
@@ -42,8 +38,8 @@ def get_all_customer() -> tuple[any, int]:
     Gets all the customers
     :return:
     """
-    emp_list = db_op.get_customer_from_db(conn,all=True)
-    return emp_list,http.HTTPStatus.OK
+    emp_list = db_op.get_customer_from_db(conn, all=True)
+    return emp_list, http.HTTPStatus.OK
 
 
 @app.get("/customer/<id>")
@@ -57,12 +53,12 @@ def get_customer(id: str) -> tuple[dict, int]:
     emp = db_op.get_customer_from_db(conn, id)
     if not emp:
         return {"message": f"Not a valid id {id}"}, http.HTTPStatus.NOT_FOUND
-    return emp.to_json(),http.HTTPStatus.OK
+    return emp.to_json(), http.HTTPStatus.OK
 
 
 @app.delete("/customer/<id>")
 @token_required
-def delete_customer(id: str) -> tuple[dict,int]:
+def delete_customer(id: str) -> tuple[dict, int]:
     """
     Deletes a customer
     :param id:
@@ -75,9 +71,9 @@ def delete_customer(id: str) -> tuple[dict,int]:
     print(sql)
     resp = db_op.execute_with_get(conn, sql)
     if not resp:
-        return {"message": f"Cannot delete {id}"} , http.HTTPStatus.NOT_FOUND
+        return {"message": f"Cannot delete {id}"}, http.HTTPStatus.NOT_FOUND
 
-    return {"message": f"deleted {id}"},http.HTTPStatus.OK
+    return {"message": f"deleted {id}"}, http.HTTPStatus.OK
 
 
 @app.post("/customer/<id>")
@@ -109,7 +105,29 @@ def update_customer(id: str) -> tuple[dict, int]:
            existing_details.country_id, id)
     print(sql)
     resp = db_op.execute_with_get(conn, sql)
-    return {"message": f"updated {id}"},http.HTTPStatus.OK
+    return {"message": f"updated {id}"}, http.HTTPStatus.OK
 
 
-app.run(debug=True, host='127.0.0.1', port=8080,use_reloader=False)
+@app.get('/department')
+@token_required
+def get_all_departments():
+    sql = '''
+        SELECT * FROM Departments
+    '''
+    resp = db_op.execute_with_get(conn, sql, multi=True)
+    all_depts = [x[1] for x in resp]
+    return {"depts": all_depts}, 200
+
+
+@app.get('/country')
+@token_required
+def get_all_country():
+    sql = '''
+        SELECT * FROM Country
+    '''
+    resp = db_op.execute_with_get(conn, sql, multi=True)
+    all_countries = [x[1] for x in resp]
+    return {"countries": all_countries}, 200
+
+
+app.run(debug=True, host='127.0.0.1', port=8080, use_reloader=False)
