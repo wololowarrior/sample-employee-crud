@@ -2,7 +2,6 @@ import urllib.parse as up
 
 import psycopg2
 import psycopg2.errors
-
 from Classes.data_defination import Departments, Customer
 
 
@@ -146,6 +145,9 @@ class DBOp:
             else:
                 return
             self.commit(conn)
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            raise Exception("Data being used somewhere else")
         except Exception as e:
             print(e)
             conn.rollback()
